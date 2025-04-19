@@ -175,3 +175,4 @@ cython_debug/
 
 # Ignorar base de datos local
 db/optigas.db
+*.db
