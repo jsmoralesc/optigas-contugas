@@ -3,12 +3,38 @@ import pandas as pd
 import sqlite3
 
 @st.cache_data
+
+# @st.cache_data
+# def cargar_datos():
+#     # Descargar la base de datos
+#     url = "https://github.com/anfisbena/MIAD/raw/main/GPA/optigas.db"
+#     response = requests.get(url)
+#     response.raise_for_status()
+    
+#     # Guardar temporalmente en un archivo
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as tmp_file:
+#         tmp_file.write(response.content)
+#         tmp_path = tmp_file.name
+    
+#     # Conectar a la base de datos temporal
+#     conn = sqlite3.connect(tmp_path)
+#     df = pd.read_sql("SELECT * FROM gold_anomalias", conn)
+#     df['timestamp'] = pd.to_datetime(df['timestamp'])
+#     conn.close()
+    
+#     # Eliminar el archivo temporal (opcional)
+#     os.unlink(tmp_path)
+    
+#     return df
+
 def cargar_datos():
     conn = sqlite3.connect("db/optigas.db")
     df = pd.read_sql("SELECT * FROM gold_anomalias", conn)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     conn.close()
     return df
+
+
 
 def mostrar_tabla_resumen(fecha=None):
     st.markdown("## 🧾 Resumen Descriptivo por Cliente")

@@ -1,6 +1,12 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import requests
+from io import BytesIO
+import tempfile
+import os
+import streamlit as st
+
 
 @st.cache_data
 def cargar_datos():
@@ -9,6 +15,31 @@ def cargar_datos():
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     conn.close()
     return df
+
+# @st.cache_data
+# def cargar_datos():
+#     # Descargar la base de datos
+#     url = "https://github.com/anfisbena/MIAD/raw/main/GPA/optigas.db"
+#     response = requests.get(url)
+#     response.raise_for_status()
+    
+#     # Guardar temporalmente en un archivo
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as tmp_file:
+#         tmp_file.write(response.content)
+#         tmp_path = tmp_file.name
+    
+#     # Conectar a la base de datos temporal
+#     conn = sqlite3.connect(tmp_path)
+#     df = pd.read_sql("SELECT * FROM gold_anomalias", conn)
+#     df['timestamp'] = pd.to_datetime(df['timestamp'])
+#     conn.close()
+    
+#     # Eliminar el archivo temporal (opcional)
+#     os.unlink(tmp_path)
+    
+#     return df
+
+
 
 def obtener_clientes():
     df = cargar_datos()

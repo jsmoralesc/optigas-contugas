@@ -14,5 +14,6 @@ dependencies:
   - jupyterlab
   - sqlite
   - pip
+  - plotly
   - pip:
       - sqlalchemy
