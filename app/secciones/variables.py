@@ -30,10 +30,7 @@ def visualizar_variables(cliente="Todos", fecha=None):
     st.markdown("## 📈 Evolución de Variables Operativas")
     
     # Crear figura con subplots
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
-                        subplot_titles=("Volumen a lo largo del tiempo", 
-                                      "Presión a lo largo del tiempo", 
-                                      "Temperatura a lo largo del tiempo"))
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, subplot_titles=("Volumen a lo largo del tiempo", "Presión a lo largo del tiempo", "Temperatura a lo largo del tiempo"))
     
     # Añadir trazas
     fig.add_trace(
@@ -54,16 +51,11 @@ def visualizar_variables(cliente="Todos", fecha=None):
     # Actualizar diseño
     fig.update_layout(height=800, width=1000, showlegend=False)
     fig.update_xaxes(title_text="Fecha", row=3, col=1)
-    
     st.plotly_chart(fig)
-
     st.markdown("## 📌 Distribución de Variables")
     
     # Crear figura para distribuciones
-    fig_dist = make_subplots(rows=1, cols=3,
-                            subplot_titles=("Distribución del Volumen",
-                                          "Distribución de la Presión",
-                                          "Distribución de la Temperatura"))
+    fig_dist = make_subplots(rows=1, cols=3,subplot_titles=("Distribución del Volumen", "Distribución de la Presión", "Distribución de la Temperatura"))
     
     # Añadir histogramas
     fig_dist.add_trace(

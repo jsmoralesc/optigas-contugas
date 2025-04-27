@@ -5,31 +5,22 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 @st.cache_data(ttl=3600)  # Cache por 1 hora
+
 def cargar_datos():
     conn = sqlite3.connect("db/optigas.db")
-    # Solo cargar las columnas necesarias
-    df = pd.read_sql("""
-        SELECT timestamp, cliente_id, volumen, presion, temperatura, severidad 
-        FROM gold_anomalias
-    """, conn)
+    df = pd.read_sql("SELECT timestamp, cliente_id, volumen, presion, temperatura, severidad FROM gold_anomalias", conn)
     conn.close()
     
     # Optimizar tipos de datos
     df['timestamp'] = pd.to_datetime(df['timestamp'])
-    df['volumen'] = pd.to_numeric(df['volumen'], downcast='float')
-    df['presion'] = pd.to_numeric(df['presion'], downcast='float')
-    df['temperatura'] = pd.to_numeric(df['temperatura'], downcast='float')
     df['severidad'] = df['severidad'].astype('category')
-    
     return df
 
-def filtrar_datos(df, cliente, fecha=None):
-    df_filtrado = df[df['cliente_id'] == cliente].copy()
-    
-    if fecha:
-        fecha_inicio, fecha_fin = fecha
-        mask = (df_filtrado['timestamp'] >= pd.to_datetime(fecha_inicio)) & (df_filtrado['timestamp'] <= pd.to_datetime(fecha_fin))
-        df_filtrado = df_filtrado[mask]
+def filtrar_datos(df, cliente, fecha):
+    fecha_inicio, fecha_fin = fecha
+    df_filtrado = df[df['cliente_id'] == cliente].copy()    
+    mask = (df_filtrado['timestamp'] >= pd.to_datetime(fecha_inicio)) & (df_filtrado['timestamp'] <= pd.to_datetime(fecha_fin))
+    df_filtrado = df_filtrado[mask]
     
     return df_filtrado
 
@@ -39,7 +30,7 @@ def crear_grafico_scatter(df, x_col, y_col, color_map):
     for severity, color in color_map.items():
         df_sub = df[df['severidad'] == severity]
         fig.add_trace(
-            go.Scattergl(  # Usar Scattergl en lugar de Scatter
+            go.Scattergl(
                 x=df_sub[x_col],
                 y=df_sub[y_col],
                 name=severity,
@@ -57,8 +48,6 @@ def crear_grafico_scatter(df, x_col, y_col, color_map):
 
 def crear_time_series(df, y_col, title, color_map):
     fig = go.Figure()
-    
-    # Línea base simplificada
     fig.add_trace(
         go.Scattergl(
             x=df['timestamp'],
@@ -67,14 +56,9 @@ def crear_time_series(df, y_col, title, color_map):
             line=dict(color='lightgray', width=1),
             name=y_col.capitalize()
         )
-    )
-    
-    # Muestrear datos si hay muchos puntos (>1000)
-    if len(df) > 1000:
-        df_sample = df.sample(1000)
-    else:
-        df_sample = df.copy()
-    
+    )   
+
+    df_sample = df.sample(1000) if len(df) > 1000 else df.copy()# Muestrear datos si hay muchos puntos (>1000)
     for severity, color in color_map.items():
         df_sub = df_sample[df_sample['severidad'] == severity]
         fig.add_trace(
@@ -87,7 +71,7 @@ def crear_time_series(df, y_col, title, color_map):
                 showlegend=False
             )
         )
-    
+
     fig.update_layout(
         title=dict(text=title, font=dict(size=14)),
         height=300,
@@ -100,9 +84,7 @@ def visualizar_cliente(cliente="Todos", fecha=None):
         st.info("Selecciona un cliente para ver su análisis detallado.")
         return
 
-    # Cargar datos una vez
-    df_full = cargar_datos()
-    df = filtrar_datos(df_full, cliente, fecha)
+    df = filtrar_datos(cargar_datos(), cliente, fecha)
     
     if df.empty:
         st.warning("No hay datos disponibles para el cliente y rango de fechas seleccionado.")
@@ -125,7 +107,6 @@ def visualizar_cliente(cliente="Todos", fecha=None):
 def mostrar_metricas(df):
     st.markdown("### 📊 Métricas Clave")
     
-    # Usar columnas más eficientes
     cols = st.columns(4)
     metrics = [
         ("Consumo Total", f"{df['volumen'].sum():,.0f} m³", "📦"),

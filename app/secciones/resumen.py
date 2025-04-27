@@ -65,9 +65,9 @@ def mostrar_tabla_resumen(fecha=None):
     def colorear(val, critico_bajo=0.5, critico_alto=2):
         if isinstance(val, (int, float)):
             if val < critico_bajo:
-                return 'background-color: #ffcccc'
+                return 'background-color: #c9b371'
             elif val > critico_alto:
-                return 'background-color: #fff2cc'
+                return 'background-color: #d13636'
         return ''
 
     st.dataframe(

@@ -68,9 +68,17 @@ def entrenar_por_cliente(db_path):
         
         # ---- 1. Detección por Reglas de Negocio ---- #
         df['alerta_presion'] = ~df['presion'].between(7.25, 17.4)
-        df['alerta_temperatura'] = ~df['temperatura'].between(12, 50)
-        df['alerta_reglas'] = df['alerta_presion'] | df['alerta_temperatura']
+        df['alerta_temperatura'] = ~df['temperatura'].between(12, 33)# temperatura maxima 3Q
+        # Crear una condición para detectar cuando alguna variable es 0 y las otras > 0
+        # Crear una condición para detectar cuando alguna variable es 0 y las otras > 0
+        condicion_cero = (
+            ((df['presion'] == 0) & (df['temperatura'] > 0) & (df['volumen'] > 0)) |  # presión es 0
+            ((df['temperatura'] == 0) & (df['presion'] > 0) & (df['volumen'] > 0)) |  # temperatura es 0
+            ((df['volumen'] == 0) & (df['presion'] > 0) & (df['temperatura'] > 0))
+        )    # volumen es 0
 
+        # Combinar todas las alertas
+        df['alerta_reglas'] = df['alerta_presion'] | df['alerta_temperatura'] | condicion_cero
         # ---- 2. Detección por Modelos de ML ---- #
         iso = IsolationForest(contamination=0.05, random_state=42)
         df['anomalia_iso'] = iso.fit_predict(X)
@@ -81,8 +89,7 @@ def entrenar_por_cliente(db_path):
         # ---- 3. Severidad Combinada (Reglas + ML) ---- #
         df['severidad'] = df.apply(
             lambda x: (
-                'Alta' if x['alerta_reglas'] 
-                else 'Alta' if (x[['anomalia_iso', 'anomalia_svm']] == -1).all() 
+                'Alta' if (x[['anomalia_iso', 'anomalia_svm']] == -1).all() | x[['alerta_reglas']]
                 else 'Media' if -1 in x[['anomalia_iso', 'anomalia_svm']].values 
                 else 'Baja'
             ), axis=1
