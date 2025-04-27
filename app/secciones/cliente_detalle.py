@@ -1,81 +1,150 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import sqlite3
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-@st.cache_data
+@st.cache_data(ttl=3600)  # Cache por 1 hora
+
 def cargar_datos():
     conn = sqlite3.connect("db/optigas.db")
-    df = pd.read_sql("SELECT * FROM gold_anomalias", conn)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = pd.read_sql("SELECT timestamp, cliente_id, volumen, presion, temperatura, severidad FROM gold_anomalias", conn)
     conn.close()
+    
+    # Optimizar tipos de datos
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['severidad'] = df['severidad'].astype('category')
     return df
+
+def filtrar_datos(df, cliente, fecha):
+    fecha_inicio, fecha_fin = fecha
+    df_filtrado = df[df['cliente_id'] == cliente].copy()    
+    mask = (df_filtrado['timestamp'] >= pd.to_datetime(fecha_inicio)) & (df_filtrado['timestamp'] <= pd.to_datetime(fecha_fin))
+    df_filtrado = df_filtrado[mask]
+    
+    return df_filtrado
+
+def crear_grafico_scatter(df, x_col, y_col, color_map):
+    fig = go.Figure()
+    
+    for severity, color in color_map.items():
+        df_sub = df[df['severidad'] == severity]
+        fig.add_trace(
+            go.Scattergl(
+                x=df_sub[x_col],
+                y=df_sub[y_col],
+                name=severity,
+                mode='markers',
+                marker=dict(color=color, size=6, opacity=0.6),
+                hoverinfo='skip'  # Desactivar hover para mejorar rendimiento
+            )
+        )
+    
+    fig.update_layout(
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=350
+    )
+    return fig
+
+def crear_time_series(df, y_col, title, color_map):
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scattergl(
+            x=df['timestamp'],
+            y=df[y_col],
+            mode='lines',
+            line=dict(color='lightgray', width=1),
+            name=y_col.capitalize()
+        )
+    )   
+
+    df_sample = df.sample(1000) if len(df) > 1000 else df.copy()# Muestrear datos si hay muchos puntos (>1000)
+    for severity, color in color_map.items():
+        df_sub = df_sample[df_sample['severidad'] == severity]
+        fig.add_trace(
+            go.Scattergl(
+                x=df_sub['timestamp'],
+                y=df_sub[y_col],
+                mode='markers',
+                marker=dict(color=color, size=6),
+                name=severity,
+                showlegend=False
+            )
+        )
+
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=14)),
+        height=300,
+        margin=dict(l=20, r=20, t=40, b=20)
+    )
+    return fig
 
 def visualizar_cliente(cliente="Todos", fecha=None):
     if cliente == "Todos":
         st.info("Selecciona un cliente para ver su análisis detallado.")
         return
 
-    st.markdown("## 🧪 Comportamiento de Variables por Cliente")
-    df = cargar_datos()
-    df = df[df['cliente_id'] == cliente]
-    if fecha:
-        fecha_inicio, fecha_fin = fecha
-        df = df[(df['timestamp'] >= pd.to_datetime(fecha_inicio)) & (df['timestamp'] <= pd.to_datetime(fecha_fin))]
+    df = filtrar_datos(cargar_datos(), cliente, fecha)
+    
+    if df.empty:
+        st.warning("No hay datos disponibles para el cliente y rango de fechas seleccionado.")
+        return
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("📦 Consumo Total", f"{df['volumen'].sum():,.2f} m³")
-    col2.metric("📈 Promedio Diario", f"{df.groupby(df['timestamp'].dt.date)['volumen'].sum().mean():,.2f} m³")
-    col3.metric("📉 Días con Consumo Cero", df[df['volumen'] == 0].shape[0])
+    st.markdown(f"## 🧪 Análisis - {cliente}")
+    
+    # Usar pestañas para cargar contenido bajo demanda
+    tab1, tab2, tab3 = st.tabs(["📊 Métricas", "📈 Series Temporales", "📌 Detalles"])
+    
+    with tab1:
+        mostrar_metricas(df)
+        
+    with tab2:
+        mostrar_series_temporales(df)
+        
+    with tab3:
+        mostrar_detalles(df)
 
-    col4, col5 = st.columns(2)
-    col4.metric("🚨 Alertas (3 días)", df[df['timestamp'] >= df['timestamp'].max() - pd.Timedelta(days=3)].shape[0])
-    col5.metric("📊 % Lecturas Anómalas", f"{(df['severidad'] != 'Baja').mean() * 100:.2f}%")
+def mostrar_metricas(df):
+    st.markdown("### 📊 Métricas Clave")
+    
+    cols = st.columns(4)
+    metrics = [
+        ("Consumo Total", f"{df['volumen'].sum():,.0f} m³", "📦"),
+        ("Promedio Diario", f"{df.groupby(df['timestamp'].dt.date)['volumen'].sum().mean():,.0f} m³", "📈"),
+        ("Días Cero", df[df['volumen'] == 0].shape[0], "📉"),
+        ("% Anomalías", f"{(df['severidad'] != 'Baja').mean() * 100:.1f}%", "🚨")
+    ]
+    
+    for (name, value, icon), col in zip(metrics, cols):
+        col.metric(f"{icon} {name}", value)
 
-    st.markdown("### 🔎 Gráficos de Dispersión con Codificación por Severidad")
+def mostrar_series_temporales(df):
+    st.markdown("### 📈 Evolución Temporal")
+    color_map = {"Alta": "red", "Media": "orange", "Baja": "green"}
+    
+    # Cargar gráficos bajo demanda
+    with st.spinner("Cargando visualizaciones..."):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            fig = crear_time_series(df, 'volumen', 'Volumen', color_map)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with col2:
+            fig = crear_time_series(df, 'presion', 'Presión', color_map)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        fig = crear_time_series(df, 'temperatura', 'Temperatura', color_map)
+        st.plotly_chart(fig, use_container_width=True)
 
-    fig, axs = plt.subplots(1, 2, figsize=(14, 5))
-    sns.scatterplot(data=df, x='volumen', y='temperatura', hue='severidad', ax=axs[0])
-    axs[0].set_title("Volumen vs Temperatura")
-
-    sns.scatterplot(data=df, x='volumen', y='presion', hue='severidad', ax=axs[1])
-    axs[1].set_title("Volumen vs Presión")
-
-    st.pyplot(fig)
-
-
-    st.markdown("### 📈 Serie Temporal del Volumen")
-    colores = {"Alta": "red", "Media": "orange", "Baja": "green"}
-    fig, ax = plt.subplots(figsize=(14, 5))
-    for severidad, color in colores.items():
-        sub = df[df['severidad'] == severidad]
-        ax.scatter(sub['timestamp'], sub['volumen'], label=severidad, color=color, s=10)
-
-    ax.plot(df['timestamp'], df['volumen'], color='lightgray', label="Volumen")
-    ax.set_title(f"Volumen con codificación de severidad – Cliente {cliente}")
-    ax.legend()
-    ax.grid(True)
-    st.pyplot(fig)
-
-    st.markdown("### 📈 Serie Temporal de presion")
-    fig, ax = plt.subplots(figsize=(14, 5))
-    for severidad, color in colores.items():
-        sub = df[df['severidad'] == severidad]
-        ax.scatter(sub['timestamp'], sub['presion'], label=severidad, color=color, s=10)
-    ax.plot(df['timestamp'], df['presion'], color='lightgray', label="Presion")
-    ax.set_title(f"Presion con codificación de severidad – Cliente {cliente}")
-    ax.legend()
-    ax.grid(True)
-    st.pyplot(fig)
-
-    st.markdown("### 📈 Serie Temporal de temperatura")
-    fig, ax = plt.subplots(figsize=(14, 5))
-    for severidad, color in colores.items():
-        sub = df[df['severidad'] == severidad]
-        ax.scatter(sub['timestamp'], sub['temperatura'], label=severidad, color=color, s=10)
-    ax.plot(df['timestamp'], df['temperatura'], color='lightgray', label="Temperatura")
-    ax.set_title(f"Temperatura con codificación de severidad – Cliente {cliente}")
-    ax.legend()
-    ax.grid(True)
-    st.pyplot(fig)
+def mostrar_detalles(df):
+    st.markdown("### 🔍 Detalles Adicionales")
+    
+    # Mostrar tabla de resumen (muestra pequeña)
+    st.dataframe(
+        df.sort_values('timestamp', ascending=False).head(100)[
+            ['timestamp', 'volumen', 'presion', 'temperatura', 'severidad']
+        ],
+        height=300,
+        use_container_width=True
+    )
