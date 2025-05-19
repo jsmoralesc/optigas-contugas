@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 import os
+from src.validaciones.validador_oiml import validar_rangos_fisicos
 
 DB_PATH = "db/optigas.db"
 CSV_OUTPUT = "data/gold/lecturas_completas.csv"
@@ -38,6 +39,16 @@ def construir_tabla_gold(db_path, export_csv=True):
         os.makedirs("data/gold", exist_ok=True)
         df_gold.to_csv(CSV_OUTPUT, index=False)
         print(f"📁 También guardado en: {CSV_OUTPUT}")
+
+    # Cargar datos recién generados
+    df_gold = pd.read_sql("SELECT * FROM gold_lecturas_completas", conn)
+
+    # Aplicar validación de rangos físicos
+    df_validado = validar_rangos_fisicos(df_gold)
+
+    # Guardar como nueva tabla
+    df_validado.to_sql("gold_validacion_fisica", conn, if_exists="replace", index=False)
+    print("✅ Validación física OIML aplicada y almacenada en 'gold_validacion_fisica'")
 
     conn.close()
 

@@ -89,8 +89,8 @@ def entrenar_por_cliente(db_path):
         # ---- 3. Severidad Combinada (Reglas + ML) ---- #
         df['severidad'] = df.apply(
             lambda x: (
-                'Alta' if (x[['anomalia_iso', 'anomalia_svm']] == -1).all() | x[['alerta_reglas']]
-                else 'Media' if -1 in x[['anomalia_iso', 'anomalia_svm']].values 
+                'Alta' if ((x['anomalia_iso'] == -1) and (x['anomalia_svm'] == -1)) or x['alerta_reglas']
+                else 'Media' if -1 in [x['anomalia_iso'], x['anomalia_svm']]
                 else 'Baja'
             ), axis=1
         )

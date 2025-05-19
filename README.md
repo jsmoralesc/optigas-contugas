@@ -64,9 +64,9 @@ streamlit run app/main.py
 Este proyecto utiliza SQLite como base de datos local. Para crear la base de datos `optigas.db`, asegúrate de tener el archivo original `Datos.xlsx` en la ruta `data/raw/` y luego ejecuta:
 
 ```bash
-python src/etl_raw_to_silver.py
-python src/etl_silver_to_gold.py
-python src/anomaly_detection.py
+python -m src.etl_raw_to_silver
+python -m src.etl_silver_to_gold
+python -m src.anomaly_detection
 ```
 Esto generará:
 optigas.db en la carpeta db/
