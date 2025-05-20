@@ -35,11 +35,11 @@ def mostrar_tabla_resumen(fecha=None, cliente="Todos"):
         consumo_maximo=('volumen', 'max'),
         desviacion=('volumen', 'std'),
         CUM=('volumen', lambda x: x[df.loc[x.index, 'timestamp'] >= fecha_corte].sum()),
-        num_altas=('severidad', lambda x: (x == 'Alta').sum()),
-        num_medias=('severidad', lambda x: (x == 'Media').sum()),
-        num_bajas=('severidad', lambda x: (x == 'Baja').sum()),
-        total_anomalias=('severidad', lambda x: (x != 'Baja').sum()),
-        porcentaje_anomalias=('severidad', lambda x: (x != 'Baja').mean() * 100)
+        num_Alto=('severidad', lambda x: (x == 'Alto').sum()),
+        num_Potencial=('severidad', lambda x: (x == 'Potencial').sum()),
+        num_normales=('severidad', lambda x: (x == 'OK').sum()),
+        total_anomalias=('severidad', lambda x: (x != 'OK').sum()),
+        porcentaje_anomalias=('severidad', lambda x: (x != 'OK').mean() * 100)
     ).reset_index()
 
     resumen['rel_CUM'] = resumen['CUM'] / resumen['consumo_promedio']
@@ -71,7 +71,7 @@ def mostrar_tabla_resumen(fecha=None, cliente="Todos"):
         "Métrica": [
             "consumo_promedio", "consumo_minimo", "consumo_maximo", "desviacion",
             "CUM", "rel_CUM",
-            "num_altas", "num_medias", "num_bajas", "total_anomalias", "porcentaje_anomalias"
+            "num_Alto", "num_Potencial", "num_normales", "total_anomalias", "porcentaje_anomalias"
         ],
         "Descripción": [
             "Promedio horario del volumen de gas.",
@@ -80,11 +80,11 @@ def mostrar_tabla_resumen(fecha=None, cliente="Todos"):
             "Desviación estándar del consumo.",
             "Consumo total en los últimos 30 días.",
             "Relación entre CUM y el promedio histórico.",
-            "Número de anomalías de severidad Alta.",
-            "Número de anomalías de severidad Media.",
+            "Número de anomalías de severidad Alto.",
+            "Número de anomalías de severidad Potencial.",
             "Número de lecturas normales.",
-            "Total de alertas (Alta o Media).",
-            "Porcentaje de registros con anomalías (Alta o Media)."
+            "Total de alertas (Alto o Potencial).",
+            "Porcentaje de registros con anomalías (Alto o Potencial)."
         ]
     })
 

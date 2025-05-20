@@ -32,8 +32,8 @@ def visualizar_cliente(cliente="Todos", fecha=None):
         mostrar_detalles(df)
         grafico_3d_anomalias(df)
 
-        from secciones import comparacion_modelos
-        comparacion_modelos.mostrar_comparacion(cliente_id=cliente)
+        #from secciones import comparacion_modelos
+        #comparacion_modelos.mostrar_comparacion(cliente_id=cliente)
 
 
 def cargar_datos():
@@ -113,7 +113,7 @@ def crear_time_series(df, y_col, title, color_map):
 
 def mostrar_series_temporales(df):
     st.markdown("### 📈 Evolución Temporal")
-    color_map = {"Alta": "red", "Media": "orange", "Baja": "green"}
+    color_map = {"Alto": "red", "Potencial": "orange", "OK": "green"}
     
     # Cargar gráficos bajo demanda
     with st.spinner("Cargando visualizaciones..."):
@@ -226,7 +226,7 @@ def mostrar_metricas_historicas(df):
 def mostrar_metricas_anomalias(df):
     st.markdown("### 🚨 Métricas de Anomalías")
 
-    df_anom = df[df['severidad'] != 'Baja']
+    df_anom = df[df['severidad'] != 'OK']
     total_anomalias = df_anom.shape[0]
 
     if df_anom.empty:
@@ -251,7 +251,7 @@ def mostrar_metricas_anomalias(df):
 from plotly import graph_objects as go
 
 def grafico_3d_anomalias(df):
-    df_anom = df[df['severidad'] != 'Baja']
+    df_anom = df[df['severidad'] != 'OK']
     
     if df_anom.empty:
         st.info("El cliente no tiene registros anómalos para graficar en 3D.")
@@ -263,9 +263,9 @@ def grafico_3d_anomalias(df):
 
     # Colores por severidad
     colores = {
-        "Alta": "red",
-        "Media": "orange",
-        "Baja": "green"
+        "Alto": "red",
+        "Potencial": "orange",
+        "OK": "green"
     }
 
     # Una traza por severidad

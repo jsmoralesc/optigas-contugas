@@ -44,8 +44,8 @@ with st.sidebar:
 
     severidades = st.multiselect(
         "Severidad",
-        options=["Alta", "Media", "Baja"],
-        default=["Alta", "Media", "Baja"]
+        options=["Alto", "Potencial", "OK"],
+        default=["Alto", "Potencial", "OK"]
     )
 
     seccion = "KPIs y Alertas"  # Elimina el menú, y deja por defecto solo esta sección

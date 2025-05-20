@@ -23,7 +23,7 @@ def mostrar_alertas(cliente="Todos", fecha=None, severidades=None):
         df = df[df['severidad'].isin(severidades)]
 
     # Filtrar alertas recientes
-    df_alertas = df[df['severidad'] != "Baja"].sort_values(by="timestamp", ascending=False)
+    df_alertas = df[df['severidad'] != "OK"].sort_values(by="timestamp", ascending=False)
     df_ultimos3 = df_alertas[df_alertas['timestamp'] >= df_alertas['timestamp'].max() - pd.Timedelta(days=3)]
 
     # Layout en dos columnas
@@ -56,13 +56,13 @@ def mostrar_alertas(cliente="Todos", fecha=None, severidades=None):
 
 
     with col2:
-        st.subheader("📊 Visualización de variables operativas y anomalías (últimos 3 días)")
+        st.subheader("📊 Visualización de variables operativas y anomalías (top 5 clientes con más alertas en los últimos 3 días)")
 
         if df_ultimos3.empty:
             st.info("No hay alertas registradas en los últimos 3 días.")
             return
 
-        variable = st.selectbox("Selecciona variable a visualizar", ["presion", "temperatura", "volumen"])
+        variable = st.selectbox("Selecciona variable a visualizar", [ "volumen", "presion", "temperatura"])
 
 
         # 🔹 Serie de tiempo (solo últimos 3 días)
