@@ -12,24 +12,26 @@ Detectar anomalías en el consumo de gas natural en clientes industriales, media
 ## 🗂️ Estructura de datos
 ```bash
 optigas-contugas/
+├── app/
+│   ├── assets/       # imagnes  y adjuntos
+│   └── secciones/      # scripts para el dashboard
+│   └── main/      # script principal del dashboard
 ├── data/
 │   ├── raw/       # Datos originales sin procesar
-│   ├── silver/    # Datos limpios y transformados
 │   └── gold/      # Datos listos para modelamiento o visualización
 │
 ├── db/
 │   └── optigas.db # Base de datos SQLite
+│
+├── Notebooks/     # Algunos cuardenos de exploracion
 │
 ├── src/
 │   ├── etl_raw_to_silver.py
 │   ├── etl_silver_to_gold.py
 │   └── utils.py
 │
-├── notebooks/
-│   └── 01_exploracion.ipynb
-│
 ├── README.md
-└── requirements.txt
+└── environment.yml
 ```
 
 ## 🛠️ Tecnologías usadas
