@@ -6,12 +6,12 @@ from plotly.subplots import make_subplots
 
 @st.cache_data(ttl=3600)  # Cache por 1 hora
 
-def visualizar_cliente(cliente="Todos", fecha=None):
+def visualizar_cliente(cliente="Todos", fecha=None, severidades=None):
     if cliente == "Todos":
         st.info("Selecciona un cliente para ver su análisis detallado.")
         return
 
-    df = filtrar_datos(cargar_datos(), cliente, fecha)
+    df = filtrar_datos(cargar_datos(), cliente, fecha, severidades)
     
     if df.empty:
         st.warning("No hay datos disponibles para el cliente y rango de fechas seleccionado.")
@@ -46,11 +46,12 @@ def cargar_datos():
     df['severidad'] = df['severidad'].astype('category')
     return df
 
-def filtrar_datos(df, cliente, fecha):
+def filtrar_datos(df, cliente, fecha, severidades):
     fecha_inicio, fecha_fin = fecha
     df_filtrado = df[df['cliente_id'] == cliente].copy()    
     mask = (df_filtrado['timestamp'] >= pd.to_datetime(fecha_inicio)) & (df_filtrado['timestamp'] <= pd.to_datetime(fecha_fin))
     df_filtrado = df_filtrado[mask]
+    df_filtrado = df_filtrado[df_filtrado['severidad'].isin(severidades)]
     
     return df_filtrado
 

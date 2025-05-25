@@ -69,7 +69,7 @@ if seccion == "KPIs y Alertas":
     alertas.mostrar_alertas(cliente="Todos", fecha=(fecha_inicio, fecha_fin), severidades=severidades)
 
     # 🧪 Análisis detallado del cliente
-    cliente_detalle.visualizar_cliente(cliente=cliente, fecha=(fecha_inicio, fecha_fin))
+    cliente_detalle.visualizar_cliente(cliente=cliente, fecha=(fecha_inicio, fecha_fin), severidades=severidades)
 
     # 🧾 Tabla resumen por cliente
     resumen.mostrar_tabla_resumen(fecha=(fecha_inicio, fecha_fin), cliente=cliente)
