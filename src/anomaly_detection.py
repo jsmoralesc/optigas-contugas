@@ -28,6 +28,14 @@ Cliente ={
     "CLIENTE20":{'eps':0.5,'min_samp':5},
 }
 
+def detectar_anomalias_IQR(serie):
+    Q1 = serie.quantile(0.25)
+    Q3 = serie.quantile(0.75)
+    IQR = Q3 - Q1
+    lim_inf = Q1 - 1.5 * IQR
+    lim_sup = Q3 + 1.5 * IQR
+    return ~serie.between(lim_inf, lim_sup)
+
 def entrenar_por_cliente(db_path):
     # Realizar conexión a la BD
     conn = sqlite3.connect(db_path)
@@ -37,46 +45,47 @@ def entrenar_por_cliente(db_path):
     resultados = []
 
     for cliente in Cliente.keys():
-        df=df_all[df_all['cliente_id'] == cliente].copy()
+        df = df_all[df_all['cliente_id'] == cliente].copy()
         df.set_index('timestamp', inplace=True)
 
-        # ---- 1. Detección por Reglas de Negocio ---- #
-        df['alerta_presion'] = ~df['presion'].between(7.25, 17.4) 
-        df['alerta_temperatura'] = ~df['temperatura'].between(0, 50)
+        # ---- 1. Detección por Reglas de Negocio (IQR) en datos originales ---- #
+        df['alerta_presion'] = detectar_anomalias_IQR(df['presion'])
+        df['alerta_temperatura'] = detectar_anomalias_IQR(df['temperatura'])
 
-        # Anomalia sospechosa
-        # Crear una condición para detectar cuando alguna variable es 0 y las otras > 0
-        condicion_cero =(
-            ((df['presion'] == 0) & (df['temperatura'] > 0) & (df['volumen'] > 0)) |  # presión es 0
-            ((df['temperatura'] == 0) & (df['presion'] > 0) & (df['volumen'] > 0))   # temperatura es 0
-        )  # volumen es 0
+        # Anomalía sospechosa por ceros inconsistentes
+        condicion_cero = (
+            ((df['presion'] == 0) & (df['temperatura'] > 0) & (df['volumen'] > 0)) |
+            ((df['temperatura'] == 0) & (df['presion'] > 0) & (df['volumen'] > 0))
+        )
 
-        # Combinar todas las alertas      
-        df['alerta_reglas'] = df['alerta_presion'] | df['alerta_temperatura'] | condicion_cero
+        # Combinar todas las alertas
+        df['alerta_reglas'] = df['alerta_presion'] | df['alerta_temperatura'] 
+        #| condicion_cero
 
-    # ---- 2. Detección por Modelos de ML ---- #
+        # ---- 2. Detección por Modelos de ML ---- #
         features = ['Presion_scaled', 'Temperatura_scaled', 'Volumen_scaled']
-        model = DBSCAN( min_samples=Cliente[cliente]['min_samp'], eps=Cliente[cliente]['eps'], random_state=42)
+        model = DBSCAN(min_samples=Cliente[cliente]['min_samp'], eps=Cliente[cliente]['eps'])
         dbscan_pred = model.fit_predict(df[features])
-        dbscan_labels = [1 if label == -1 else 0 for label in dbscan_labels]
-        df['Anomalia_iso'] = np.where(iso_pred == -1, 1, 0)
-    
+        df['Anomalia_DBSCAN'] = np.where(dbscan_pred == -1, 1, 0)
 
-    # ---- 3. Severidad Combinada (Reglas + ML) ---- #
+        # ---- 3. Severidad Combinada (Reglas + ML) ---- #
         df['severidad'] = df.apply(lambda row: 
             'Alto' if row['alerta_reglas'] == 1
-            else 'Potencial' if row['Anomalia_iso'] == 1  
+            else 'Potencial' if row['Anomalia_DBSCAN'] == 1  
             else 'OK', axis=1)
+
         # Guardar resultados
         resultados.append(df)
 
+    # Unir resultados
     df_resultado = pd.concat(resultados)
-    df_resultado.to_csv("data/gold/results.csv")
-    df_resultado.drop(columns=['index'], inplace=True)
+    df_resultado.drop(columns=['index'], errors='ignore', inplace=True)
     df_resultado.reset_index(inplace=True)
+    
+    # Guardar en base de datos
     df_resultado.to_sql("gold_anomalias", conn, if_exists="replace", index=False)
     conn.close()
-    print("✅ Datos procesados con reglas + ML")
+    print("✅ Datos procesados con IQR + ML (DBSCAN)")
 
 if __name__ == "__main__":
     entrenar_por_cliente(DB_PATH)
