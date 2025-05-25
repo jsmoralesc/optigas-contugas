@@ -70,7 +70,7 @@ def tratar_duplicados(df):
 
     return df_final
 
-def tratar_Inexistentes(df):
+def tratar_inexistentes(df):
     """
     Rellena registros faltantes por cliente a un índice horario completo y aplica
     interpolación lineal a las variables numéricas.
@@ -85,11 +85,18 @@ def tratar_Inexistentes(df):
     for cliente in clientes:
         df_cliente = df[df['Cliente'] == cliente].copy()
 
-        # Asegurarse de que la columna 'Fecha' esté en datetime y como índice
+        # Poner 'Fecha' en formato correcto y como índice
         df_cliente = df_cliente.set_index('Fecha')
 
-        # Reindexar con el rango de fechas completo por horas, esperado
-        df_cliente = df_cliente.reindex(pd.date_range(start="2019-01-14 00:00:00", end="2023-12-31 23:00:00", freq="h"))
+        # Obtener el rango de fechas del cliente
+        fecha_min = df_cliente.index.min()
+        fecha_max = df_cliente.index.max()
+
+        # Crear indice horario
+        nuevo_index = pd.date_range(start=fecha_min, end=fecha_max, freq="h")
+
+        # Reindexar al nuevo índice
+        df_cliente = df_cliente.reindex(nuevo_index)
 
         # Restaurar columna de cliente (porque puede perderse al reindexar)
         df_cliente['Cliente'] = cliente
@@ -97,21 +104,19 @@ def tratar_Inexistentes(df):
         # Guardar en diccionario
         clientes_reindexados[cliente] = df_cliente
 
-    # Unir todos los clientes reindexados en un solo DataFrame
-    df_completo = pd.concat(clientes_reindexados.values(), axis=0)
-    # Resetear el índice para que 'Fecha' sea una columna nuevamente
-    df_completo = df_completo.reset_index().rename(columns={"index": "Fecha"})
-        # Imputar valores faltantes usando interpolación lineal por cliente
-    variables = ['Volumen', 'Presion', 'Temperatura']
+    # Concatenar todos los clientes
+    df_completo = pd.concat(clientes_reindexados.values())
+    df_completo.reset_index(inplace=True)
+    df_completo.rename(columns={'index': 'Fecha'}, inplace=True)
 
+    # Interpolación por cliente para las variables numéricas
+    variables = ['Volumen', 'Presion', 'Temperatura']
     for var in variables:
         df_completo[var] = df_completo.groupby('Cliente')[var].transform(lambda x: x.interpolate())
-        # Copia del dataset 
-        
+
     return df_completo
 
-# ELIMINAR TENDENCIA
-def eliminar_Tendencia(df, columna):
+def eliminar_tendencia(df, columna):
     """
     Aplica la descomposición STL para eliminar la tendencia de una serie temporal por cliente.
     """
@@ -139,17 +144,26 @@ def eliminar_Tendencia(df, columna):
 
     return df_stl
 
-def escalar_Datos(df):
+def escalar_datos(df):
     """
-    Escala las variables numéricas usando transformaciones logarítmicas y escaladores robustos.
+    Escala las variables numéricas usando escaladores robustos.
     """
-    df['Volumen_log'] = np.log1p(df['Volumen'])  # log(1 + x)
-    df['Volumen_scaled'] = StandardScaler().fit_transform(df[['Volumen_log']])
-    # Aplicar escalamiento
-    df['Presion_scaled'] = RobustScaler().fit_transform(df[['Presion']])
-    df['Temperatura_scaled'] = StandardScaler().fit_transform(df[['TemperaturaSinTendencia']])
-    df = df.drop(['Volumen_log'], axis=1)
-    return df
+    df_resultado = df.copy()
+
+    for cliente_id, cliente_data in df.groupby('Cliente'):
+        # Extraer variables numéricas
+        features = cliente_data[['Presion', 'TemperaturaSinTendencia', 'Volumen']].astype('float32')
+
+        # Escalar
+        scaler = StandardScaler()
+        features_scaled = scaler.fit_transform(features)
+
+        # Asignar columnas escaladas
+        df_resultado.loc[cliente_data.index, 'Presion_scaled'] = features_scaled[:, 0]
+        df_resultado.loc[cliente_data.index, 'Temperatura_scaled'] = features_scaled[:, 1]
+        df_resultado.loc[cliente_data.index, 'Volumen_scaled'] = features_scaled[:, 2]
+
+    return df_resultado
 
 
 def procesar_hojas_excel(excel_path, db_path, export_csv=True):
@@ -163,11 +177,12 @@ def procesar_hojas_excel(excel_path, db_path, export_csv=True):
     
     df=tratar_duplicados(df_all)
     print('✅ Duplicados tratados.')
-    df=tratar_Inexistentes(df)
+    df=tratar_inexistentes(df)
     print('✅ Imputación de datos faltantes completada.')
-    df=eliminar_Tendencia(df,'Temperatura')
+    df=eliminar_tendencia(df,'Temperatura')
     print('✅ Aplicación de la descomposición STL a las series de tiempo 📉')
-    df=escalar_Datos(df)
+    df=escalar_datos(df)
+
     print('✅ Datos escalados correctamente. 📏')
     #df=df[(df['Fecha'] >= '2022-01-01')]
     df=df.rename(columns={"Fecha": "timestamp",'Presion':'presion','Volumen':'volumen','Temperatura':'temperatura','Cliente':'cliente_id'})
