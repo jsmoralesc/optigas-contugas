@@ -55,7 +55,7 @@ def tratar_Duplicados(df):
                 fila["Cliente"] = cliente
             filas_limpias.append(pd.Series(fila))
 
-    # Crear DataFrame limpio solo con registros duplicados tratados
+    # Crear dataFrame limpio solo con registros duplicados tratados
     df_sin_duplicados = pd.DataFrame(filas_limpias)
 
     # Eliminar duplicados del original y unir con la versión limpia
@@ -145,14 +145,15 @@ def procesar_hojas_excel(excel_path, db_path, export_csv=True):
         for name in pd.ExcelFile(excel_path).sheet_names], ignore_index=True)
     df_all['Fecha'] = pd.to_datetime(df_all['Fecha'])
 
-    print('eliminando duplicados ✖️2️⃣')
+    
     df=tratar_Duplicados(df_all)
-    print('creando registros inexistentes ⏳')
+    print('✅ Eliminación de datos duplicados')
     df=tratar_Inexistentes(df)
-    print('eliminando tendencia 📉')
+    print('✅ Imputación de datos ⏳')
     df=eliminar_Tendencia(df,'Temperatura')
-    print('escalando datos 📏')
+    print('✅ Remoción de tendencia en la serie de tiempo de temperatura 📉')
     df=escalar_Datos(df)
+    print('✅ Escalamiento de los datos 📏')
     df=df[(df['Fecha'] >= '2022-01-01')]
     df=df.rename(columns={"Fecha": "timestamp",'Presion':'presion','Volumen':'volumen','Temperatura':'temperatura','Cliente':'cliente_id'})
 
