@@ -113,7 +113,7 @@ def crear_time_series(df, y_col, title, color_map):
 
 def mostrar_series_temporales(df):
     st.markdown("### 📈 Evolución Temporal")
-    color_map = {"Alto": "red", "Potencial": "orange", "OK": "green"}
+    color_map = {"Alto": "red", "Potencial": "orange"}
     
     # Cargar gráficos bajo demanda
     with st.spinner("Cargando visualizaciones..."):
@@ -133,11 +133,15 @@ def mostrar_series_temporales(df):
 def mostrar_detalles(df):
     st.markdown("### 🔍 Detalles Adicionales")
     
-    # Mostrar tabla de resumen (muestra pequeña)
+    # Filtrar filas donde severidad no sea 'ok' (ignorando mayúsculas)
+    df_filtrado = df[df['severidad'].str.lower() != 'OK']
+    
+    # Ordenar por fecha descendente y tomar las 100 más recientes
+    df_recientes = df_filtrado.sort_values('timestamp', ascending=False).head(100)
+    
+    # Mostrar en la app
     st.dataframe(
-        df.sort_values('timestamp', ascending=False).head(100)[
-            ['timestamp', 'volumen', 'presion', 'temperatura', 'severidad']
-        ],
+        df_recientes[['timestamp', 'volumen', 'presion', 'temperatura', 'severidad']],
         height=300,
         use_container_width=True
     )
@@ -265,7 +269,6 @@ def grafico_3d_anomalias(df):
     colores = {
         "Alto": "red",
         "Potencial": "orange",
-        "OK": "green"
     }
 
     # Una traza por severidad
