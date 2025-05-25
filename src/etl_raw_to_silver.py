@@ -163,19 +163,14 @@ def procesar_hojas_excel(excel_path, db_path, export_csv=True):
     
     df=tratar_duplicados(df_all)
     print('✅ Duplicados tratados.')
-    print(df)
     df=tratar_Inexistentes(df)
     print('✅ Imputación de datos faltantes completada.')
-    print(df)
     df=eliminar_Tendencia(df,'Temperatura')
     print('✅ Aplicación de la descomposición STL a las series de tiempo 📉')
-    print(df)
     df=escalar_Datos(df)
     print('✅ Datos escalados correctamente. 📏')
-    print(df)
     #df=df[(df['Fecha'] >= '2022-01-01')]
     df=df.rename(columns={"Fecha": "timestamp",'Presion':'presion','Volumen':'volumen','Temperatura':'temperatura','Cliente':'cliente_id'})
-    print(df)
 
     # Conexión a la base de datos SQLite
     conn = sqlite3.connect(db_path)
