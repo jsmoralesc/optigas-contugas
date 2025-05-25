@@ -135,7 +135,7 @@ def mostrar_detalles(df):
     st.markdown("### 🔍 Detalles Adicionales")
     
     # Filtrar filas donde severidad no sea 'ok' (ignorando mayúsculas)
-    df_filtrado = df[df['severidad'].str.lower() != 'OK']
+    df_filtrado = df[df['severidad'].str.lower() != 'ok']
     
     # Ordenar por fecha descendente y tomar las 100 más recientes
     df_recientes = df_filtrado.sort_values('timestamp', ascending=False).head(100)
