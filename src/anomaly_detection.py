@@ -66,12 +66,12 @@ def entrenar_por_cliente(db_path):
         features = ['Presion_scaled', 'Temperatura_scaled', 'Volumen_scaled']
         model = DBSCAN(min_samples=Cliente[cliente]['min_samp'], eps=Cliente[cliente]['eps'])
         dbscan_pred = model.fit_predict(df[features])
-        df['Anomalia_DBSCAN'] = np.where(dbscan_pred == -1, 1, 0)
+        df['Anomalia_modelo'] = np.where(dbscan_pred == -1, 1, 0)
 
         # ---- 3. Severidad Combinada (Reglas + ML) ---- #
         df['severidad'] = df.apply(lambda row: 
             'Alto' if row['alerta_reglas'] == 1
-            else 'Potencial' if row['Anomalia_DBSCAN'] == 1  
+            else 'Potencial' if row['Anomalia_modelo'] == 1  
             else 'OK', axis=1)
 
         # Guardar resultados
