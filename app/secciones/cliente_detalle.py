@@ -114,7 +114,7 @@ def crear_time_series(df, y_col, title, color_map):
 
 def mostrar_series_temporales(df):
     st.markdown("### 📈 Evolución Temporal")
-    color_map = {"Alto": "red", "Potencial": "orange"}
+    color_map = {"Alto": "red", "Potencial": "orange", "OK": "grey"}
     
     # Cargar gráficos bajo demanda
     with st.spinner("Cargando visualizaciones..."):

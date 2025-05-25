@@ -47,6 +47,8 @@ with st.sidebar:
         options=["Alto", "Potencial"],
         default=["Alto", "Potencial"]
     )
+    # Agregamos "OK" manualmente sin mostrarla como opción
+    severidades = severidades + ["OK"]
 
     seccion = "KPIs y Alertas"  # Elimina el menú, y deja por defecto solo esta sección
 
