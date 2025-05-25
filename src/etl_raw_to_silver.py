@@ -11,7 +11,7 @@ EXCEL_PATH = Path("data/raw/Datos.xlsx")
 DB_PATH = "db/optigas.db"
 CSV_OUTPUT = "data/gold/lecturas_completas.csv"
 
-def tratar_Duplicados(df):
+def tratar_duplicados(df):
     """
     Trata registros duplicados por cliente y fecha aplicando estrategias específicas
     (promedio o mediana) por cliente y variable.
@@ -96,7 +96,8 @@ def tratar_Inexistentes(df):
 
         # Guardar en diccionario
         clientes_reindexados[cliente] = df_cliente
-        # Unir todos los clientes reindexados en un solo DataFrame
+
+    # Unir todos los clientes reindexados en un solo DataFrame
     df_completo = pd.concat(clientes_reindexados.values(), axis=0)
     # Resetear el índice para que 'Fecha' sea una columna nuevamente
     df_completo = df_completo.reset_index().rename(columns={"index": "Fecha"})
@@ -159,18 +160,22 @@ def procesar_hojas_excel(excel_path, db_path, export_csv=True):
     df_all = pd.concat([pd.read_excel(excel_path, sheet_name=name).assign(Cliente=name) 
         for name in pd.ExcelFile(excel_path).sheet_names], ignore_index=True)
     df_all['Fecha'] = pd.to_datetime(df_all['Fecha'])
-
     
-    df=tratar_Duplicados(df_all)
+    df=tratar_duplicados(df_all)
     print('✅ Duplicados tratados.')
+    print(df)
     df=tratar_Inexistentes(df)
     print('✅ Imputación de datos faltantes completada.')
+    print(df)
     df=eliminar_Tendencia(df,'Temperatura')
     print('✅ Aplicación de la descomposición STL a las series de tiempo 📉')
+    print(df)
     df=escalar_Datos(df)
     print('✅ Datos escalados correctamente. 📏')
-    df=df[(df['Fecha'] >= '2022-01-01')]
+    print(df)
+    #df=df[(df['Fecha'] >= '2022-01-01')]
     df=df.rename(columns={"Fecha": "timestamp",'Presion':'presion','Volumen':'volumen','Temperatura':'temperatura','Cliente':'cliente_id'})
+    print(df)
 
     # Conexión a la base de datos SQLite
     conn = sqlite3.connect(db_path)
