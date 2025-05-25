@@ -32,9 +32,9 @@ def mostrar_kpis(fecha=None):
     col2.metric("📈 Consumo Promedio Diario", f"{df.groupby(df['timestamp'].dt.date)['volumen'].sum().mean():,.2f}")
     col3.metric("⚠️ Porc. Lecturas Anómalas", f"{(df['severidad'] != 'OK').mean() * 100:.2f}%")
 
-    ultimos_3_dias = df[df['timestamp'] >= df['timestamp'].max() - pd.Timedelta(days=3)]
+    ultimos_3_dias = df[df['timestamp'] >= df['timestamp'].max() - pd.Timedelta(days=20)]
     
     col4, col5, col6 = st.columns(3)
     col4.metric("🧪 Clientes Monitoreados", df['cliente_id'].nunique())
-    col5.metric("🚨 Alertas (últimos 3 días)", ultimos_3_dias.shape[0])
-    col6.metric("👥 Clientes con alerta (últimos 3 días)", ultimos_3_dias['cliente_id'].nunique())
+    col5.metric("🚨 Alertas (últimos 20 días)", ultimos_3_dias.shape[0])
+    col6.metric("👥 Clientes con alerta (últimos 20 días)", ultimos_3_dias['cliente_id'].nunique())
