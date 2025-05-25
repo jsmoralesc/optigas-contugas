@@ -12,6 +12,10 @@ DB_PATH = "db/optigas.db"
 CSV_OUTPUT = "data/gold/lecturas_completas.csv"
 
 def tratar_Duplicados(df):
+    """
+    Trata registros duplicados por cliente y fecha aplicando estrategias específicas
+    (promedio o mediana) por cliente y variable.
+    """
     # Lista de clientes con su estrategia recomendada
     estrategias = {
         "CLIENTE2": "mediana",
@@ -67,6 +71,10 @@ def tratar_Duplicados(df):
     return df_final
 
 def tratar_Inexistentes(df):
+    """
+    Rellena registros faltantes por cliente a un índice horario completo y aplica
+    interpolación lineal a las variables numéricas.
+    """
     # Diccionario para guardar los nuevos DataFrames reindexados por cliente
     clientes_reindexados = {}
 
@@ -103,6 +111,9 @@ def tratar_Inexistentes(df):
 
 # ELIMINAR TENDENCIA
 def eliminar_Tendencia(df, columna):
+    """
+    Aplica la descomposición STL para eliminar la tendencia de una serie temporal por cliente.
+    """
     df_stl = pd.DataFrame()
 
     for cliente in df['Cliente'].unique():
@@ -128,7 +139,9 @@ def eliminar_Tendencia(df, columna):
     return df_stl
 
 def escalar_Datos(df):
-    # Log-transform para Volumen antes de escalar
+    """
+    Escala las variables numéricas usando transformaciones logarítmicas y escaladores robustos.
+    """
     df['Volumen_log'] = np.log1p(df['Volumen'])  # log(1 + x)
     df['Volumen_scaled'] = StandardScaler().fit_transform(df[['Volumen_log']])
     # Aplicar escalamiento
@@ -140,20 +153,22 @@ def escalar_Datos(df):
 
 def procesar_hojas_excel(excel_path, db_path, export_csv=True):
     # Leer todas las hojas del archivo Excel
-    print(f"\n Procesando Documeno de excel 📄")
+    print("👋 Hola, gracias por utilizar OptiGas. A continuación, realizaremos el proceso de Extracción, Transformación y Cargue de datos (ETL)")
+    print("🔍 Iniciando proceso ETL con OptiGas.")
+    print("📄 Cargando hojas de Excel...")
     df_all = pd.concat([pd.read_excel(excel_path, sheet_name=name).assign(Cliente=name) 
         for name in pd.ExcelFile(excel_path).sheet_names], ignore_index=True)
     df_all['Fecha'] = pd.to_datetime(df_all['Fecha'])
 
     
     df=tratar_Duplicados(df_all)
-    print('✅ Eliminación de datos duplicados')
+    print('✅ Duplicados tratados.')
     df=tratar_Inexistentes(df)
-    print('✅ Imputación de datos ⏳')
+    print('✅ Imputación de datos faltantes completada.')
     df=eliminar_Tendencia(df,'Temperatura')
-    print('✅ Remoción de tendencia en la serie de tiempo de temperatura 📉')
+    print('✅ Aplicación de la descomposición STL a las series de tiempo 📉')
     df=escalar_Datos(df)
-    print('✅ Escalamiento de los datos 📏')
+    print('✅ Datos escalados correctamente. 📏')
     df=df[(df['Fecha'] >= '2022-01-01')]
     df=df.rename(columns={"Fecha": "timestamp",'Presion':'presion','Volumen':'volumen','Temperatura':'temperatura','Cliente':'cliente_id'})
 
@@ -169,7 +184,7 @@ def procesar_hojas_excel(excel_path, db_path, export_csv=True):
         print(f"📁 También guardado en: {CSV_OUTPUT}")
 
     conn.close()
-    print("\n✅ Proceso completo. Base de datos actualizada.")
+    print("\n🏁 Proceso ETL completado exitosamente. Base de datos actualizada.")
 
 if __name__ == "__main__":
     procesar_hojas_excel(EXCEL_PATH, DB_PATH)
